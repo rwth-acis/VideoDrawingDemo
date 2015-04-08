@@ -1,0 +1,11 @@
+{
+  "name": "videodrawing",
+  "version": "0.0.0",
+  "dependencies": {
+    "core-elements": "Polymer/core-elements#^0.5.1",
+    "paper-elements": "Polymer/paper-elements#^0.5.1",
+    "polymer": "Polymer/polymer#^0.5.4",
+    "sevianno-video-canvas": "rwth-acis/sevianno-video-canvas#develop"
+  },
+  "devDependencies": {}
+}
