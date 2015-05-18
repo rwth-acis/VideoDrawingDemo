@@ -9,8 +9,5 @@
     "sevianno-annotations-list": "rwth-acis/sevianno-annotations-list#develop",
     "sevianno-video-controls": "rwth-acis/sevianno-video-controls#develop"
   },
-  "devDependencies": {},
-  "resolutions": {
-    "sevianno-annotations-list": "develop"
-  }
+  "devDependencies": {}
 }
