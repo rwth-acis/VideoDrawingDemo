@@ -1,0 +1,54 @@
+<dom-module id="reqbaz-button">
+    <style>
+        :host {
+            display: block;
+        }
+    </style>
+    <template>
+        <paper-icon-button on-tap="showBubbles" icon="speaker-notes"></paper-icon-button>
+
+        <template is="dom-repeat" items="{{_bubbles}}">
+            <paper-icon-button icon="create" style$="{{getBubblePosition(item)}}"></paper-icon-button>
+        </template>
+
+    </template>
+</dom-module>
+<script>
+    (function() {
+        Polymer({
+
+            is: 'reqbaz-button',
+
+            properties: {
+                _bubbles: []
+            },
+
+            ready: function() {
+                this._bubbles = [];
+            },
+
+            showBubbles: function() {
+                this._bubbles = [];
+
+                var elements = document.querySelectorAll("[reqbaz-id]");
+                var arrayLength = elements.length;
+                for (var i = 0; i < arrayLength; i++) {
+                    var bubble = {};
+                    bubble.top = elements[i].offsetTop;
+                    bubble.left = elements[i].offsetLeft + elements[i].width;
+
+                    this.push('_bubbles', bubble);
+
+                    elements[i].style.border = "1px solid black";
+                }
+            },
+
+            getBubblePosition: function(bubble) {
+                var topPos = bubble.top;
+                var leftPos = bubble.left;
+                return "background:red;position:absolute;top:" + topPos + "px;left:" + leftPos + "px;z-index:100;";
+            }
+
+        });
+    })();
+</script>

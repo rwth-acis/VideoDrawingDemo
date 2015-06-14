@@ -99,8 +99,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 <span class="flex"></span>
 
                 <!-- Toolbar icons -->
-                <paper-icon-button icon="refresh"></paper-icon-button>
-                <paper-icon-button icon="search"></paper-icon-button>
+                <!--<reqbaz-button></reqbaz-button>-->
 
                 <!-- Application name -->
                 <div class="middle paper-font-display2 app-name">Video Drawing Demo</div>
@@ -122,7 +121,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                 Then try to play the video and draw something else. Finally click the first marker to return to
                                 the start of the video. Have fun!</p>
 
-                            <drawing-overlay id="drawing1" width="450" height="360">
+                            <drawing-overlay id="drawing1" width="450" height="360" reqbaz-id="asdf">
                                 <video id="video1" width="450" height="360">
                                     <source src="parking.mp4" type="video/mp4">
                                 </video>
@@ -130,7 +129,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
                             <br>
 
-                            <sevianno-video-controls target-video="video1" target-drawing="drawing1"></sevianno-video-controls>
+                            <sevianno-video-controls target-video="video1" target-drawing="drawing1" reqbaz-id="1234"></sevianno-video-controls>
 
                         </paper-material>
 
