@@ -33,21 +33,43 @@
         var connector = new Y.XMPP().join("video-drawing-demo");
         var y = new Y(connector);
 
-        connector.whenSynced(function() {
-            if (y.val("annotations") == null) {
-                y.val("annotations", new Y.List());
-            }
-
-            var annotationsList = y.val("annotations");
-
-            annotationsList.observe(function(events) {
-                for (var i in events) {
-                    if (events[i].type === "insert") {
-                        console.log("Observed insert!");
-                        var annotation = JSON.parse(y.val("annotations").val(events[i].position));
+        document.querySelector("#video1").addEventListener("loadedmetadata", function(e) {
+            connector.whenSynced(function() {
+                var setAnnotationsObserver = function(annotations) {
+                    // show all already existing drawings
+                    var annotationList = annotations.val();
+                    for (var i in annotationList) {
+                        var annotation = annotationList[i];
                         document.querySelector("sevianno-video-controls").addAnnotation(annotation);
                     }
+
+                    annotations.observe(function(events) {
+                        for (var i in events) {
+                            if (events[i].type === "insert") {
+                                if (events[i].changedBy !== y._model.connector.user_id) {
+                                    console.log("Observed insert!");
+                                    var annotation = JSON.parse(y.val("annotations").val(events[i].position));
+                                    document.querySelector("sevianno-video-controls").addAnnotation(annotation);
+                                }
+                            }
+                        }
+                    });
+                };
+
+                y.observe(function(events) {
+                    for (var i in events) {
+                        if (events[i].name === "annotations") {
+                            setAnnotationsObserver(events[i].object);
+                        }
+                    }
+                });
+
+                if (y.val("annotations") == null) {
+                    y.val("annotations", new Y.List());
+                } else {
+                    setAnnotationsObserver(y.val("annotations"));
                 }
+
             });
         });
 
