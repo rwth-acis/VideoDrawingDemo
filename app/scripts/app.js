@@ -30,42 +30,85 @@
         // imports are loaded and elements have been registered
 
         // set up y-js framework
-        var connector = new Y.XMPP().join("video-drawing-demo");
-        var y = new Y(connector);
+        //var connector = new Y.WebRTC("video-drawing-demo2");
+        var connector = new Y.XMPP().join("video-drawing-demo2");
+        window.y = new Y(connector);
+
+        // this token makes sure that annotations that were just added to the drawing from a yjs object
+        // are not immediately written back to yjs.
+        var lockAddAnnotation = false;
 
         document.querySelector("#video1").addEventListener("loadedmetadata", function(e) {
             connector.whenSynced(function() {
+
                 var setAnnotationsObserver = function(annotations) {
                     // show all already existing drawings
-                    var annotationList = annotations.val();
-                    for (var i in annotationList) {
-                        var annotation = annotationList[i];
-                        document.querySelector("sevianno-video-controls").addAnnotation(annotation);
+                    var annotationTimes = annotations.val();
+                    for (var i in annotationTimes) {
+                        var annotationObject = annotationTimes[i].val();
+                        annotationObject.forEach(function(object) {
+                            // make an annotation object out of it
+                            var annotation = {"time":i,"type":"drawing","data":object};
+                            document.querySelector("sevianno-video-controls").addAnnotation(annotation);
+                        });
+
                     }
 
                     annotations.observe(function(events) {
                         for (var i in events) {
-                            if (events[i].type === "insert") {
-                                if (events[i].changedBy !== y._model.connector.user_id) {
-                                    console.log("Observed insert!");
-                                    var annotation = JSON.parse(y.val("annotations").val(events[i].position));
+                            if (events[i].type === "add") {
+                                var annotationsList = annotations.val(events[i].name);
+                                var time = events[i].name;
+
+                                // add the existing objects of the list to the drawing
+                                var objectsJSON = annotationsList.val();
+                                for (var k in objectsJSON) {
+                                    var annotation = {};
+                                    annotation.time = time;
+                                    annotation.type = "drawing";
+                                    annotation.data = JSON.parse(objectsJSON[k]);
                                     document.querySelector("sevianno-video-controls").addAnnotation(annotation);
                                 }
+
+                                // add an observer to the list
+                                annotationsList.observe(function(listEvents) {
+                                    for (var j in listEvents) {
+                                        if (listEvents[j].type === "insert") {
+                                            if (listEvents[j].changedBy !== y._model.connector.user_id) {
+                                                console.log("Observed insert!");
+
+                                                var object = annotationsList.val(listEvents[j].position);
+                                                var annotation = {};
+                                                annotation.time = time;
+                                                annotation.type = "drawing";
+                                                annotation.data = JSON.parse(object);
+                                                lockAddAnnotation = true;
+                                                document.querySelector("sevianno-video-controls").addAnnotation(annotation);
+                                                lockAddAnnotation = false;
+                                            }
+                                        }
+                                    }
+                                });
                             }
                         }
                     });
+
                 };
 
+                // observe the main y object
                 y.observe(function(events) {
                     for (var i in events) {
+
+                        // if the event is about the "annotations" object, set the annotations observer
                         if (events[i].name === "annotations") {
-                            setAnnotationsObserver(events[i].object);
+                            setAnnotationsObserver(events[i].object.val("annotations"));
                         }
+
                     }
                 });
 
                 if (y.val("annotations") == null) {
-                    y.val("annotations", new Y.List());
+                    y.val("annotations", new Y.Object());
                 } else {
                     setAnnotationsObserver(y.val("annotations"));
                 }
@@ -74,9 +117,23 @@
         });
 
         document.querySelector("sevianno-video-controls").addEventListener("sevianno-annotation-added", function(annotation) {
-            console.log("inserting annotation");
-            var annotationsList = y.val("annotations");
-            annotationsList.push(JSON.stringify(annotation.detail));
+            // check if there are annotations currently being added from yjs.
+            if (!lockAddAnnotation) {
+                console.log("inserting annotation");
+
+                if (y._model.connector.is_synced) {
+                    var time = annotation.detail.time;
+                    var objects = y.val("annotations").val(time);
+
+                    if (objects == null) {
+                        y.val("annotations").val(time, new Y.List([JSON.stringify(annotation.detail.data)]));
+                    } else {
+                        // drawing does already exist at this time
+                        y.val("annotations").val(time).push(JSON.stringify(annotation.detail.data));
+                    }
+                }
+            }
+
         });
 
     });

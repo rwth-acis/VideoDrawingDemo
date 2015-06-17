@@ -11,7 +11,8 @@
     "sevianno-video-controls": "rwth-acis/sevianno-video-controls#master",
     "yjs": "y-js/yjs#~0.5.2",
     "y-xmpp": "~0.5.0",
-    "y-list": "~0.5.1"
+    "y-list": "~0.5.1",
+    "y-webrtc": "y-js/y-webrtc#~0.5.0"
   },
   "devDependencies": {
     "web-component-tester": "*",
