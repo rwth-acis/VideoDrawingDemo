@@ -1,0 +1,196 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<script src="../fabric/dist/fabric.js"></script>
+
+<!--
+A component to allow drawing on top of other elements.
+
+Example:
+
+    <drawing-overlay>
+        <img src="http://placekitten.com/g/350/350">
+    </drawing-overlay>
+
+@demo
+-->
+<dom-module id="drawing-overlay">
+
+    <style>
+
+        :host {
+            position: relative;
+            display: block;
+            box-sizing: border-box;
+        }
+
+        .content-wrapper > ::content {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+        }
+
+    </style>
+
+    <template>
+        <div class="content-wrapper"><content></content></div>
+        <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
+    </template>
+
+</dom-module>
+
+<script>
+
+    Polymer({
+
+        is: 'drawing-overlay',
+
+        properties: {
+
+            /**
+             * `autoscale` indicates whether the canvas should be resized dynamically.
+             */
+            autoscale: Boolean,
+
+            /**
+             * The width of the drawing.
+             *
+             * @default '350'
+             */
+            width: {
+                type: Number,
+                value: 350
+            },
+
+            /**
+             * The height of the drawing.
+             *
+             * @default '350'
+             */
+            height: {
+                type: Number,
+                value: 350
+            }
+        },
+
+        listeners: {
+            'seed-element-lasers': 'sayHello'
+        },
+
+        // Element Lifecycle
+
+        ready: function() {
+            // `ready` is called after all elements have been configured, but
+            // propagates bottom-up. This element's children are ready, but parents
+            // are not.
+            //
+            // This is the point where you should make modifications to the DOM (when
+            // necessary), or kick off any processes the element wants to perform.
+        },
+
+        attached: function() {
+            // `attached` fires once the element and its parents have been inserted
+            // into a document.
+            //
+            // This is a good place to perform any work related to your element's
+            // visual state or active behavior (measuring sizes, beginning animations,
+            // loading resources, etc).
+
+            // because of shady DOM we have to assign the canvas a random ID otherwise fabric.js
+            // finds only the first occurrence
+            var elem = this.querySelector("canvas");
+            elem.id = Math.random();
+
+            this._canvas = new fabric.Canvas(elem.id);
+            this._canvas.isDrawingMode = true;
+            this._canvas.freeDrawingBrush.color = "red";
+            this._canvas.freeDrawingBrush.width = 5;
+            this._canvas.on("object:added", this._canvasObjectAdded.bind(this));
+            this._canvas.on("path:created", this._canvasPathCreated.bind(this));
+        },
+
+        detached: function() {
+            // The analog to `attached`, `detached` fires when the element has been
+            // removed from a document.
+            //
+            // Use this to clean up anything you did in `attached`.
+        },
+
+        // Element Behavior
+
+        /**
+         * The `drawing-overlay-object-added` event is fired whenever a new object is added to the drawing.
+         *
+         * @event drawing-overlay-object-added
+         * @detail {{object: Object}}
+         */
+
+        /**
+         * The `drawing-overlay-path-created` event is fired whenever a path is created on the canvas.
+         *
+         * @event drawing-overlay-path-created
+         * @detail {{object: Object}}
+         */
+
+        /**
+         * Is called internally when a new drawing object has been added to the canvas.
+         */
+        _canvasObjectAdded: function(e) {
+            this.fire("drawing-overlay-object-added", {object: e.target});
+        },
+
+        /**
+         * Is called internally when a new path has been created on the canvas.
+         */
+        _canvasPathCreated: function(e) {
+            this.fire("drawing-overlay-path-created");
+        },
+
+        /**
+         * Gets the JSON representation of the drawing.
+         *
+         * @return {object} A JSON stringified object of the drawing.
+         */
+        toJSON: function() {
+            return this._canvas.toJSON();
+        },
+
+        /**
+         * Loads the JSON of a complete drawing and puts it on the canvas.
+         *
+         * @param drawing
+         * @returns {*|fabric.Canvas}
+         */
+        loadJSON: function(drawing) {
+            return this._canvas.loadFromJSON(drawing, this._canvas.renderAll.bind(this._canvas));
+        },
+
+        /**
+         * Removes the drawing from the canvas.
+         */
+        clear: function() {
+            this._canvas.clear();
+        },
+
+        /**
+         * Adds a drawing object to the current drawing on the canvas.
+         *
+         * @param object A drawing object.
+         */
+        addObject: function(object) {
+            var canvasJSON = this._canvas.toJSON();
+            canvasJSON.objects.push(object);
+            this._canvas.loadFromJSON(canvasJSON);
+        }
+
+    });
+
+</script>

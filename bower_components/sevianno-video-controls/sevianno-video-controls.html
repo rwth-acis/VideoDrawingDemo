@@ -1,0 +1,407 @@
+<!--
+Copyright (c) 2014 Advanced Community Information Systems (ACIS) Group,
+Chair of Computer Science 5 (Databases & Information Systems), RWTH Aachen University, Germany
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the ACIS Group nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-slider/paper-slider.html">
+<link rel="import" href="../iron-icons/av-icons.html">
+<link rel="import" href="../iron-signals/iron-signals.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+<!--
+This is a Web component for controlling a SeViAnno video element. It displays a play/pause button together
+with a video timeline. Below the timeline, there is an annotation bar that marks all occurrences of annotations
+in the video.
+
+Example:
+
+    <sevianno-video-controls></sevianno-video-controls>
+
+@demo
+-->
+<dom-module id="sevianno-video-controls">
+
+    <style>
+        :host {
+            display: inline-block;
+            width: 400px;
+            @apply(--layout-horizontal --layout-flex);
+        }
+
+        /*
+        ::content h2 {
+            color: blue;
+        }
+        */
+
+        #timelines {
+            /*height: 50px;
+            width: 200px;
+            display: table;*/
+            overflow: hidden;
+            @apply(--layout-vertical --layout-flex);
+        }
+
+        paper-slider {
+            /*display: table-cell;
+            @apply(--layout-flex-auto);*/
+            width:100%;
+        }
+
+        #markers {
+            /*width: 85%;               fallback for browsers without support for calc()
+            width: calc(100% - 32px);*/
+            height: 10px;
+            background: #CCC;
+            margin: 0px 14px 0px 14px;
+            position: relative;
+        }
+
+        .verticalLine {
+            position: absolute;
+            background: red;
+            top: 0px;
+            height: 100%;
+            width: 4px;
+            cursor: pointer;
+        }
+
+        paper-icon-button {
+            float: left;
+
+        }
+    </style>
+
+    <template>
+        <div>
+            <paper-icon-button id="playButton" icon="av:play-arrow" on-tap="playAction"></paper-icon-button>
+            <div id="timelines">
+                <paper-slider id="slider" on-change="sliderChange"></paper-slider>
+
+                <div id = "markers">
+                    <template is="dom-repeat" items="{{_annotations}}" as="marker">
+                        <div class="verticalLine" on-tap="markerClicked" title$="{{marker.time}}" style$="{{_getMarkerStyle(marker)}}" data-time$="{{marker.time}}"></div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </template>
+</dom-module>
+
+<script>
+
+    Polymer({
+
+        is: 'sevianno-video-controls',
+
+        properties: {
+
+            /**
+             * The `_annotations` array, has all the annotations.
+             *
+             * @attribute _annotations
+             * @type array
+             * @default []
+             * */
+            _annotations: [],
+
+            isPlaying: {
+                type: Boolean,
+                value: false
+            },
+
+            /**
+             * The id of the video element that should be controlled.
+             *
+             * @attribute target
+             * @type string
+             * @default null
+             */
+            targetVideo: {
+                type: String,
+                value: null
+            },
+
+            targetDrawing: {
+                type: String,
+                value: null
+            },
+
+            duration: {
+                type: Number,
+                readOnly: true,
+                value: 1
+            }
+
+        },
+
+        ready: function() {
+            // `ready` is called after all elements have been configured, but
+            // propagates bottom-up. This element's children are ready, but parents
+            // are not.
+            //
+            // This is the point where you should make modifications to the DOM (when
+            // necessary), or kick off any processes the element wants to perform.
+
+            // because of shady DOM we have to assign the canvas a random ID otherwise fabric.js
+            // finds only the first occurrence
+
+            this._annotations = [];
+
+        },
+
+        attached: function() {
+            // `attached` fires once the element and its parents have been inserted
+            // into a document.
+            //
+            // This is a good place to perform any work related to your element's
+            // visual state or active behavior (measuring sizes, beginning animations,
+            // loading resources, etc).
+
+            this._targetVideoElement = document.getElementById(this.targetVideo);
+            // call loadedmetadata in case the metadata is already loaded
+            this.loadedmetadata();
+            this._targetVideoElement.onloadedmetadata = this.loadedmetadata.bind(this);
+            this._targetVideoElement.ontimeupdate = this.timeupdate.bind(this);
+
+            // now listen to object-added events of the drawing canvas
+            this._targetDrawingElement = document.getElementById(this.targetDrawing);
+            this._targetDrawingElement.addEventListener("drawing-overlay-object-added", this.drawingObjectAdded.bind(this));
+        },
+
+        detached: function() {
+            // The analog to `attached`, `detached` fires when the element has been
+            // removed from a document.
+            //
+            // Use this to clean up anything you did in `attached`.
+        },
+
+        // Element Behavior
+
+        /**
+         * The `sevianno-annotation-added` event is fired whenever an annotation was added.
+         *
+         * @event sevianno-annotation-added
+         * @detail {{time: Number, type:String, data: Object}}
+         */
+
+        _getMarkerStyle: function(marker) {
+            var position = (marker.time / this.duration) * 99;
+            return "left: " + position + "%;";
+
+            // alternative calculation based on pixels
+            //var width = this.$.slider.clientWidth;
+            // 2 is the width of the marker
+            //var position = ((width / duration) * marker.time) - 2;
+        },
+
+        playAction: function() {
+            if (!this.isPlaying) {
+                this.play();
+            } else {
+                this.pause();
+            }
+        },
+
+        play: function () {
+            this.isPlaying = true;
+            this.$.playButton.icon = "av:pause";
+            this._targetVideoElement.play();
+            this._targetDrawingElement.clear();
+        },
+
+        pause: function () {
+            this.isPlaying = false;
+            this.$.playButton.icon = "av:play-arrow";
+            this._targetVideoElement.pause();
+        },
+
+        /**
+         * The `sliderChange` method is bound to the action of changing the value of video slider.
+         * When the user jumps to some random point of the slider, an signal is fired to jump the video
+         * at that position.
+         *
+         * @param e is the event, in this case the click event
+         * @param detail is usually an integer number
+         * @param sender is the element which fired the action with its data.
+         */
+        sliderChange: function (e, detail, sender) {
+            this._targetVideoElement.currentTime = this.$.slider.immediateValue;
+            this._targetDrawingElement.clear();
+        },
+
+        lockAddAnnotation: false,
+
+        /**
+         * The `markerClicked` method is called when a marker is clicked. It will jump the video and the marker time and
+         * show the annotation for this marker.
+         * @param event
+         * @param detail
+         * @param sender the value is binded at the immediateValue data of the element.
+         */
+        markerClicked: function (event, detail, sender) {
+            var time = parseFloat(event.target.dataset.time);
+
+            if (this._targetVideoElement.currentTime !== time) {
+                for (var i in this._annotations) {
+                    if (this._annotations[i].time === time) {
+                        // we got it
+                        var annotation = this._annotations[i];
+                        var time = annotation.time;
+
+                        // update the video's currenttime
+                        this._targetVideoElement.currentTime = time;
+
+                        // load the annotation
+                        var drawing = {"objects":annotation.objects, "background":""};
+                        this.lockAddAnnotation = true;
+                        this._targetDrawingElement.loadJSON(drawing);
+                        this.lockAddAnnotation = false;
+
+                        break;
+                    }
+                }
+            }
+        },
+
+        loadedmetadata: function(e) {
+            if (!this._targetVideoElement.duration) {
+                return;
+            }
+
+            this._setDuration(this._targetVideoElement.duration);
+            this.$.slider.max = this.duration;
+        },
+
+        /**
+         * For every timeupdate event updates the value of the slider.
+         * @param e
+         * @param detail
+         * @param sender
+         */
+        timeupdate: function(e) {
+            this.$.slider.value = this._targetVideoElement.currentTime;
+        },
+
+        /**
+         * The listener to object-added events of the drawing canvas.
+         */
+        drawingObjectAdded: function(e) {
+            if (!this.lockAddAnnotation) {
+                var objectJSON = e.detail.object.toJSON();
+
+                var annotation = {
+                    time: this._targetVideoElement.currentTime,
+                    type: "drawing",
+                    data: objectJSON
+                };
+
+                // now add object to the annotation object's drawing. We could use addAnnotation but since we are in the
+                // listener we can simply get the toJSON() from the canvas instead of building our own drawing object.
+                var annotationDrawing;
+
+                // check if there is already a drawing at the time of the added annotation.
+                for (var i in this._annotations) {
+                    if (this._annotations[i].time === annotation.time) {
+                        // yes, there is a drawing at this time already
+                        annotationDrawing = this._annotations[i];
+
+                        // now check if the object is already included
+                        if (annotationDrawing.objects.indexOf(objectJSON) !== -1) {
+                            return;
+                        }
+                        this._annotations.splice(i, 1);
+                        break;
+                    }
+                }
+
+                // check if the drawing is null or undefined
+                if (annotationDrawing == null) {
+                    var annotationDrawing = {};
+                    annotationDrawing.time = annotation.time;
+                    annotationDrawing.type = "drawing";
+                    annotationDrawing.objects = [];
+                }
+                annotationDrawing.objects.push(objectJSON);
+
+                // save it in the annotations array
+                this.push('_annotations', annotationDrawing);
+
+                // notify listeners
+                this.fire("sevianno-annotation-added", annotation);
+            }
+        },
+
+        /**
+         * Adds an annotation to the drawing. This function expects an annotation object with the time, the type
+         * (currently mainly "drawing") and a data object. The data object contains a single JSON Fabric.js object.
+         *
+         * @param annotation {{time: Number, type: String, data: stringified JSON Object}}
+         */
+        addAnnotation: function(annotation) {
+            var annotationDrawing;
+
+            // check if there is already a drawing at the time of the added annotation.
+            for (var i in this._annotations) {
+                if (this._annotations[i].time === annotation.time) {
+                    // yes, there is a drawing at this time, already
+                    annotationDrawing = this._annotations[i];
+                    this._annotations.splice(i, 1);
+                    break;
+                }
+            }
+
+            // check if the drawing is null or undefined
+            if (annotationDrawing == null) {
+                // from outside, we get a single object
+                var annotationDrawing = {};
+                annotationDrawing.time = annotation.time;
+                annotationDrawing.type = "drawing";
+                annotationDrawing.objects = [annotation.data];
+            } else {
+                var object = annotation.data;
+                annotationDrawing.objects.push(object);
+            }
+
+            // save it in the annotations array
+            this.push('_annotations', annotationDrawing);
+
+            // show drawing if we are at that time
+            if (this._targetVideoElement.currentTime === annotationDrawing.time) {
+                // since we only store a list of objects, we need to make a complete drawing out of it before
+                // adding it to the canvas
+                var drawing = {"objects":annotationDrawing.objects, "background":""};
+                this._targetDrawingElement.loadJSON(drawing);
+            }
+        }
+
+    });
+
+</script>
