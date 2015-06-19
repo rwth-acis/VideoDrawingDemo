@@ -338,9 +338,9 @@ Example:
 
             var roundedTime = Math.round(currentTime * 2) / 2;
 
-            // check if there is an annotation at this time, therefore first see if we just continued playing
-            // after a transmission.
-            if (this.lastTransmissionTime !== roundedTime) {
+            // first check if we are playing currently. If not, then check if there is an annotation at this time,
+            // therefore first see if we just continued playing after a transmission.
+            if (this.isPlaying && (this.lastTransmissionTime !== roundedTime)) {
                 for (var i in this._annotations) {
                     if (this._annotations[i].time === roundedTime) {
                         this.lastTransmissionTime = roundedTime;
