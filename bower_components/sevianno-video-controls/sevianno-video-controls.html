@@ -442,6 +442,7 @@ Example:
         addAnnotation: function(annotation) {
             // fix floating point annotation times
             annotation.time = parseFloat(annotation.time);
+            var eval1 = new Date().getTime();
 
             var annotationDrawing;
 
@@ -455,6 +456,8 @@ Example:
                 }
             }
 
+            var eval2 = new Date().getTime();
+
             // check if the drawing is null or undefined
             if (annotationDrawing == null) {
                 // from outside, we get a single object
@@ -467,9 +470,12 @@ Example:
                 annotationDrawing.objects.push(object);
             }
 
+            var eval3 = new Date().getTime()
+
             // save it in the annotations array
             this.push('_annotations', annotationDrawing);
 
+            var eval4 = new Date().getTime();
             // show drawing if we are at that time
             var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
             if (currentTime === annotationDrawing.time) {
@@ -478,9 +484,10 @@ Example:
                 var drawing = {"objects":annotationDrawing.objects, "background":""};
                 this._targetDrawingElement.loadJSON(drawing);
             }
+            var eval5 = new Date().getTime();
 
             // evaluation behavior
-            console.log(annotation.data.evalTime + ", " + new Date().getTime());
+            console.log(annotation.data.evalTime + "," + eval1 + "," + eval2 + "," + eval3 + "," + eval4 + "," + eval5 + "," + new Date().getTime());
         }
 
     });
