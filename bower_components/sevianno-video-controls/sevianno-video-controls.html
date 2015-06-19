@@ -103,7 +103,7 @@ Example:
         <div>
             <paper-icon-button id="playButton" icon="av:play-arrow" on-tap="playAction"></paper-icon-button>
             <div id="timelines">
-                <paper-slider id="slider" on-change="sliderChange"></paper-slider>
+                <paper-slider id="slider" on-change="sliderChange" step="0.1"></paper-slider>
 
                 <div id = "markers">
                     <template is="dom-repeat" items="{{_annotations}}" as="marker">
@@ -129,8 +129,21 @@ Example:
              * @attribute _annotations
              * @type array
              * @default []
-             * */
+             */
             _annotations: [],
+
+            /**
+             * The time in milliseconds the video should pause when it reaches an annotation.
+             *
+             * @attribute transmission
+             * @type Number
+             * @default 4000
+             */
+            transmission: {
+                type: Number,
+                readOnly: true,
+                value: 4000
+            },
 
             isPlaying: {
                 type: Boolean,
@@ -231,6 +244,9 @@ Example:
         },
 
         play: function () {
+            // clear transmission timeout if there is any
+            clearTimeout(this.transmissionTimeout);
+
             this.isPlaying = true;
             this.$.playButton.icon = "av:pause";
             this._targetVideoElement.play();
@@ -255,6 +271,9 @@ Example:
         sliderChange: function (e, detail, sender) {
             this._targetVideoElement.currentTime = this.$.slider.immediateValue;
             this._targetDrawingElement.clear();
+
+            // reset last transmission time, otherwise it will not pause the next time we run over it
+            this.lastTransmissionTime = null;
         },
 
         lockAddAnnotation: false,
@@ -301,13 +320,43 @@ Example:
         },
 
         /**
+         * This is a flag that tells us the last time the video was paused for a transmission.
+         */
+        lastTransmissionTime: null,
+
+        transmissionTimeout: null,
+
+        /**
          * For every timeupdate event updates the value of the slider.
          * @param e
          * @param detail
          * @param sender
          */
         timeupdate: function(e) {
-            this.$.slider.value = this._targetVideoElement.currentTime;
+            var currentTime = this._targetVideoElement.currentTime;
+            this.$.slider.value = currentTime;
+
+            var roundedTime = Math.round(currentTime * 2) / 2;
+
+            // check if there is an annotation at this time, therefore first see if we just continued playing
+            // after a transmission.
+            if (this.lastTransmissionTime !== roundedTime) {
+                for (var i in this._annotations) {
+                    if (this._annotations[i].time === roundedTime) {
+                        this.lastTransmissionTime = roundedTime;
+                        this.pause();
+
+                        // load the annotation
+                        var drawing = {"objects":this._annotations[i].objects, "background":""};
+                        this.lockAddAnnotation = true;
+                        this._targetDrawingElement.loadJSON(drawing);
+                        this.lockAddAnnotation = false;
+
+                        // timeout for transmission time
+                        this.transmissionTimeout = setTimeout(this.play.bind(this), this.transmission);
+                    }
+                }
+            }
         },
 
         /**
@@ -316,9 +365,11 @@ Example:
         drawingObjectAdded: function(e) {
             if (!this.lockAddAnnotation) {
                 var objectJSON = e.detail.object.toJSON();
+                // we round to the nearest 0.5
+                var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
 
                 var annotation = {
-                    time: this._targetVideoElement.currentTime,
+                    time: currentTime,
                     type: "drawing",
                     data: objectJSON
                 };
