@@ -49,7 +49,9 @@
                         annotationObject.forEach(function(object) {
                             // make an annotation object out of it
                             var annotation = {"time":i,"type":"drawing","data":object};
+                            lockAddAnnotation = true;
                             document.querySelector("sevianno-video-controls").addAnnotation(annotation);
+                            lockAddAnnotation = false;
                         });
 
                     }
@@ -67,7 +69,9 @@
                                     annotation.time = time;
                                     annotation.type = "drawing";
                                     annotation.data = JSON.parse(objectsJSON[k]);
+                                    lockAddAnnotation = true;
                                     document.querySelector("sevianno-video-controls").addAnnotation(annotation);
+                                    lockAddAnnotation = false;
                                 }
 
                                 // add an observer to the list
