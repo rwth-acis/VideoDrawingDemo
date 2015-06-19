@@ -28,19 +28,20 @@
             },
 
             showBubbles: function() {
-                this._bubbles = [];
-
-                var elements = document.querySelectorAll("[reqbaz-id]");
-                var arrayLength = elements.length;
-                for (var i = 0; i < arrayLength; i++) {
-                    var bubble = {};
-                    bubble.top = elements[i].offsetTop;
-                    bubble.left = elements[i].offsetLeft + elements[i].width;
-
-                    this.push('_bubbles', bubble);
-
-                    elements[i].style.border = "1px solid black";
-                }
+                window.open("https://requirements-bazaar.org/#/project/133/component/150");
+//                this._bubbles = [];
+//
+//                var elements = document.querySelectorAll("[reqbaz-id]");
+//                var arrayLength = elements.length;
+//                for (var i = 0; i < arrayLength; i++) {
+//                    var bubble = {};
+//                    bubble.top = elements[i].offsetTop;
+//                    bubble.left = elements[i].offsetLeft + elements[i].width;
+//
+//                    this.push('_bubbles', bubble);
+//
+//                    elements[i].style.border = "1px solid black";
+//                }
             },
 
             getBubblePosition: function(bubble) {
