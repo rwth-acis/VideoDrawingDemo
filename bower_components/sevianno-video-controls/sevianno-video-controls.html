@@ -286,6 +286,10 @@ Example:
          * @param sender the value is binded at the immediateValue data of the element.
          */
         markerClicked: function (event, detail, sender) {
+            // clear transmission timeout if there is any
+            clearTimeout(this.transmissionTimeout);
+            this.lastTransmissionTime = null;
+
             var time = parseFloat(event.target.dataset.time);
 
             if (this._targetVideoElement.currentTime !== time) {
