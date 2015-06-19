@@ -448,7 +448,8 @@ Example:
             this.push('_annotations', annotationDrawing);
 
             // show drawing if we are at that time
-            if (this._targetVideoElement.currentTime === annotationDrawing.time) {
+            var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
+            if (currentTime === annotationDrawing.time) {
                 // since we only store a list of objects, we need to make a complete drawing out of it before
                 // adding it to the canvas
                 var drawing = {"objects":annotationDrawing.objects, "background":""};
