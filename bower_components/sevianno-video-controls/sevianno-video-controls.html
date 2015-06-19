@@ -417,6 +417,9 @@ Example:
          * @param annotation {{time: Number, type: String, data: stringified JSON Object}}
          */
         addAnnotation: function(annotation) {
+            // fix floating point annotation times
+            annotation.time = parseFloat(annotation.time);
+
             var annotationDrawing;
 
             // check if there is already a drawing at the time of the added annotation.
