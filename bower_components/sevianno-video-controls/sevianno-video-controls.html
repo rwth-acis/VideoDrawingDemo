@@ -101,7 +101,7 @@ Example:
 
     <template>
         <div>
-            <paper-icon-button id="playButton" icon="av:play-arrow" on-tap="playAction"></paper-icon-button>
+            <paper-icon-button id="playButton" icon="av:play-arrow" on-tap="_playAction"></paper-icon-button>
             <div id="timelines">
                 <paper-slider id="slider" on-change="sliderChange" step="0.1"></paper-slider>
 
@@ -203,13 +203,14 @@ Example:
             this.loadedmetadata();
             this._targetVideoElement.onloadedmetadata = this.loadedmetadata.bind(this);
             this._targetVideoElement.ontimeupdate = this.timeupdate.bind(this);
+            this._targetVideoElement.addEventListener("ended", this.videoEnded.bind(this));
 
             // now listen to object-added events of the drawing canvas
             this._targetDrawingElement = document.getElementById(this.targetDrawing);
             this._targetDrawingElement.addEventListener("drawing-overlay-object-added", this.drawingObjectAdded.bind(this));
 
             // listen to mouse:down and stop playing the video
-            this._targetDrawingElement.addEventListener("drawing-overlay-mouse-down", this.drawingMouseDown.bind(this));
+            this._targetDrawingElement.addEventListener("drawing-overlay-mouse-down", this._drawingMouseDown.bind(this));
         },
 
         detached: function() {
@@ -238,7 +239,10 @@ Example:
             //var position = ((width / duration) * marker.time) - 2;
         },
 
-        playAction: function() {
+        /**
+         * The event listener for the play/pause button.
+         */
+        _playAction: function() {
             if (!this.isPlaying) {
                 this.play();
             } else {
@@ -317,6 +321,14 @@ Example:
             }
         },
 
+        videoEnded: function(e) {
+            // clear transmission timeout if there is any
+            clearTimeout(this.transmissionTimeout);
+            this.lastTransmissionTime = null;
+
+            this.pause();
+        },
+
         loadedmetadata: function(e) {
             if (!this._targetVideoElement.duration) {
                 return;
@@ -351,7 +363,8 @@ Example:
                 for (var i in this._annotations) {
                     if (this._annotations[i].time === roundedTime) {
                         this.lastTransmissionTime = roundedTime;
-                        this.pause();
+                        // stop playing the video, but do not pause it
+                        this._targetVideoElement.pause();
 
                         // load the annotation
                         var drawing = {"objects":this._annotations[i].objects, "background":""};
@@ -361,6 +374,8 @@ Example:
 
                         // timeout for transmission time
                         this.transmissionTimeout = setTimeout(this.play.bind(this), this.transmission);
+
+                        //TODO: show animation for transmission
                     }
                 }
             }
@@ -411,22 +426,26 @@ Example:
 
                 // save it in the annotations array
                 this.push('_annotations', annotationDrawing);
-
-                // notify listeners
-                this.fire("sevianno-annotation-added", annotation);
             }
+
+            // notify listeners
+            this.fire("sevianno-annotation-added", annotation);
         },
 
         /**
          * This is the event listener for the mouse:down event by the canvas. This is usually received
          * when starting a new drawing. That's why we clear the transmission timeout and pause the video.
          */
-        drawingMouseDown: function(e) {
+        _drawingMouseDown: function(e) {
+            this.pause();
+
             // clear transmission timeout if there is any
             clearTimeout(this.transmissionTimeout);
             this.lastTransmissionTime = null;
 
-            this.pause();
+            // make sure that after playing the video does not immediately stop again
+            var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
+            this.lastTransmissionTime = currentTime;
         },
 
         /**
