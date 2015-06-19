@@ -30,8 +30,8 @@
         // imports are loaded and elements have been registered
 
         // set up y-js framework
-        //var connector = new Y.WebRTC("video-drawing-demo2");
-        var connector = new Y.XMPP().join("video-drawing-demo2");
+        //var connector = new Y.WebRTC("video-drawing-demo");
+        var connector = new Y.XMPP().join("video-drawing-demo");
         window.y = new Y(connector);
 
         // this token makes sure that annotations that were just added to the drawing from a yjs object
@@ -75,8 +75,6 @@
                                     for (var j in listEvents) {
                                         if (listEvents[j].type === "insert") {
                                             if (listEvents[j].changedBy !== y._model.connector.user_id) {
-                                                console.log("Observed insert!");
-
                                                 var object = annotationsList.val(listEvents[j].position);
                                                 var annotation = {};
                                                 annotation.time = time;
@@ -119,8 +117,6 @@
         document.querySelector("sevianno-video-controls").addEventListener("sevianno-annotation-added", function(annotation) {
             // check if there are annotations currently being added from yjs.
             if (!lockAddAnnotation) {
-                console.log("inserting annotation");
-
                 if (y._model.connector.is_synced) {
                     var time = annotation.detail.time;
                     var objects = y.val("annotations").val(time);
