@@ -482,7 +482,9 @@ Example:
                 // since we only store a list of objects, we need to make a complete drawing out of it before
                 // adding it to the canvas
                 var drawing = {"objects":annotationDrawing.objects, "background":""};
+                this.lockAddAnnotation = true;
                 this._targetDrawingElement.loadJSON(drawing);
+                this.lockAddAnnotation = false;
             }
             var eval5 = new Date().getTime();
 
