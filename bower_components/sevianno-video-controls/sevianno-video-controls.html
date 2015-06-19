@@ -281,6 +281,11 @@ Example:
 
             // reset last transmission time, otherwise it will not pause the next time we run over it
             this.lastTransmissionTime = null;
+
+            // make sure we start playing in case we are in a transmission
+            if (this.isPlaying) {
+                this.play();
+            }
         },
 
         lockAddAnnotation: false,
