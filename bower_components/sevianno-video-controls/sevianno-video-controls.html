@@ -207,6 +207,9 @@ Example:
             // now listen to object-added events of the drawing canvas
             this._targetDrawingElement = document.getElementById(this.targetDrawing);
             this._targetDrawingElement.addEventListener("drawing-overlay-object-added", this.drawingObjectAdded.bind(this));
+
+            // listen to mouse:down and stop playing the video
+            this._targetDrawingElement.addEventListener("drawing-overlay-mouse-down", this.drawingMouseDown.bind(this));
         },
 
         detached: function() {
@@ -369,6 +372,10 @@ Example:
         drawingObjectAdded: function(e) {
             if (!this.lockAddAnnotation) {
                 var objectJSON = e.detail.object.toJSON();
+
+                // evaluation behavior
+                objectJSON.evalTime = new Date().getTime();
+
                 // we round to the nearest 0.5
                 var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
 
@@ -412,6 +419,18 @@ Example:
                 // notify listeners
                 this.fire("sevianno-annotation-added", annotation);
             }
+        },
+
+        /**
+         * This is the event listener for the mouse:down event by the canvas. This is usually received
+         * when starting a new drawing. That's why we clear the transmission timeout and pause the video.
+         */
+        drawingMouseDown: function(e) {
+            // clear transmission timeout if there is any
+            clearTimeout(this.transmissionTimeout);
+            this.lastTransmissionTime = null;
+
+            this.pause();
         },
 
         /**
@@ -459,6 +478,9 @@ Example:
                 var drawing = {"objects":annotationDrawing.objects, "background":""};
                 this._targetDrawingElement.loadJSON(drawing);
             }
+
+            // evaluation behavior
+            console.log(annotation.data.evalTime + ", " + new Date().getTime());
         }
 
     });
