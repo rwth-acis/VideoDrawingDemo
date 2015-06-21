@@ -281,6 +281,11 @@ Example:
 
             // reset last transmission time, otherwise it will not pause the next time we run over it
             this.lastTransmissionTime = null;
+
+            // make sure we start playing in case we are in a transmission
+            if (this.isPlaying) {
+                this.play();
+            }
         },
 
         lockAddAnnotation: false,
@@ -390,6 +395,9 @@ Example:
                 // we round to the nearest 0.5
                 var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
 
+                // evaluation
+                objectJSON.evalTime = new Date().getTime();
+
                 var annotation = {
                     time: currentTime,
                     type: "drawing",
@@ -426,10 +434,10 @@ Example:
 
                 // save it in the annotations array
                 this.push('_annotations', annotationDrawing);
-            }
 
-            // notify listeners
-            this.fire("sevianno-annotation-added", annotation);
+                // notify listeners
+                this.fire("sevianno-annotation-added", annotation);
+            }
         },
 
         /**
@@ -495,6 +503,12 @@ Example:
                 this._targetDrawingElement.loadJSON(drawing);
                 this.lockAddAnnotation = false;
             }
+
+            // notify listeners
+            this.fire("sevianno-annotation-added", annotation);
+
+            // evaluation
+            console.log(annotation.data.evalTime + "," + new Date().getTime());
         }
 
     });
