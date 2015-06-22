@@ -52,7 +52,7 @@
                             for (var j in listEvents) {
                                 if (listEvents[j].type === 'insert') {
                                     if (listEvents[j].changedBy !== y._model.connector.user_id) {
-                                        var object = annotationsList.val(listEvents[j].position);
+                                        var object = annotationTimes[i].val(listEvents[j].position);
                                         var annotation = {};
                                         annotation.time = time;
                                         annotation.type = 'drawing';
