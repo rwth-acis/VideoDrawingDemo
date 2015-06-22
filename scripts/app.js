@@ -46,6 +46,25 @@
                     var annotationTimes = annotations.val();
                     for (var i in annotationTimes) {
                         var annotationObject = annotationTimes[i].val();
+
+                        // observe any existing annotationObject
+                        annotationObject.observe(function(listEvents) {
+                            for (var j in listEvents) {
+                                if (listEvents[j].type === 'insert') {
+                                    if (listEvents[j].changedBy !== y._model.connector.user_id) {
+                                        var object = annotationsList.val(listEvents[j].position);
+                                        var annotation = {};
+                                        annotation.time = time;
+                                        annotation.type = 'drawing';
+                                        annotation.data = JSON.parse(object);
+                                        lockAddAnnotation = true;
+                                        document.querySelector('sevianno-video-controls').addAnnotation(annotation);
+                                        lockAddAnnotation = false;
+                                    }
+                                }
+                            }
+                        });
+
                         annotationObject.forEach(function(object) {
                             // make an annotation object out of it
                             var annotation = {'time':i,'type':'drawing','data':JSON.parse(object)};
