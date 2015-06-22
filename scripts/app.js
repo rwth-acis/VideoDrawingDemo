@@ -54,7 +54,7 @@
                                     if (listEvents[j].changedBy !== y._model.connector.user_id) {
                                         var object = annotationTimes[i].val(listEvents[j].position);
                                         var annotation = {};
-                                        annotation.time = time;
+                                        annotation.time = i;
                                         annotation.type = 'drawing';
                                         annotation.data = JSON.parse(object);
                                         lockAddAnnotation = true;
