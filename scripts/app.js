@@ -48,7 +48,7 @@
                         var annotationObject = annotationTimes[i].val();
 
                         // observe any existing annotationObject
-                        annotationObject.observe(function(listEvents) {
+                        annotationTimes[i].observe(function(listEvents) {
                             for (var j in listEvents) {
                                 if (listEvents[j].type === 'insert') {
                                     if (listEvents[j].changedBy !== y._model.connector.user_id) {
