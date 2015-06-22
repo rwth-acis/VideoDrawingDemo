@@ -48,7 +48,7 @@
                         var annotationObject = annotationTimes[i].val();
                         annotationObject.forEach(function(object) {
                             // make an annotation object out of it
-                            var annotation = {'time':i,'type':'drawing','data':object};
+                            var annotation = {'time':i,'type':'drawing','data':JSON.parse(object)};
                             lockAddAnnotation = true;
                             document.querySelector('sevianno-video-controls').addAnnotation(annotation);
                             lockAddAnnotation = false;
