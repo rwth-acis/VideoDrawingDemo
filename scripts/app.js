@@ -48,13 +48,14 @@
                         var annotationObject = annotationTimes[i].val();
 
                         // observe any existing annotationObject
+                        var time = i;
                         annotationTimes[i].observe(function(listEvents) {
                             for (var j in listEvents) {
                                 if (listEvents[j].type === 'insert') {
                                     if (listEvents[j].changedBy !== y._model.connector.user_id) {
                                         var object = annotationTimes[i].val(listEvents[j].position);
                                         var annotation = {};
-                                        annotation.time = i;
+                                        annotation.time = time;
                                         annotation.type = 'drawing';
                                         annotation.data = JSON.parse(object);
                                         lockAddAnnotation = true;
