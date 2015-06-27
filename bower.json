@@ -8,7 +8,7 @@
     "neon-elements": "PolymerElements/neon-elements#~1.0.0",
     "page": "visionmedia/page.js#~1.6.3",
     "drawing-overlay": "~1.0.0",
-    "sevianno-video-controls": "~1.0.0",
+    "sevianno-video-controls": "~1.0.2",
     "yjs": "yjs#~0.5.2",
     "y-xmpp": "~0.5.0",
     "y-list": "~0.5.1",
