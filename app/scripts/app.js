@@ -38,87 +38,71 @@
         // are not immediately written back to yjs.
         var lockAddAnnotation = false;
 
-        document.querySelector('#video1').addEventListener('loadedmetadata', function(e) {
-            connector.whenSynced(function() {
+        var addAnnotation = function(time, object) {
+            var annotation = {};
+            annotation.time = time;
+            annotation.type = 'drawing';
+            annotation.data = JSON.parse(object);
+            lockAddAnnotation = true;
+            document.querySelector('sevianno-video-controls').addAnnotation(annotation);
+            lockAddAnnotation = false;
+        };
 
-                var setAnnotationsObserver = function(annotations) {
-                    // show all already existing drawings
-                    var annotationTimes = annotations.val();
-                    for (var i in annotationTimes) {
-                        var annotationObject = annotationTimes[i].val();
+        var setAnnotationsObserver = function(annotations) {
+            // show all already existing drawings
+            var annotationTimes = annotations.val();
+            for (var i in annotationTimes) {
+                var annotationObject = annotationTimes[i].val();
 
-                        // observe any existing annotationObject
-                        var time = i;
-                        annotationTimes[i].observe(function(listEvents) {
-                            for (var j in listEvents) {
-                                if (listEvents[j].type === 'insert') {
-                                    if (listEvents[j].changedBy !== y._model.connector.user_id) {
-                                        var object = annotationTimes[i].val(listEvents[j].position);
-                                        var annotation = {};
-                                        annotation.time = time;
-                                        annotation.type = 'drawing';
-                                        annotation.data = JSON.parse(object);
-                                        lockAddAnnotation = true;
-                                        document.querySelector('sevianno-video-controls').addAnnotation(annotation);
-                                        lockAddAnnotation = false;
-                                    }
-                                }
-                            }
-                        });
+                // observe any existing annotationObject
+                var time = i;
+                setAnnotationsListObserver(time, annotationTimes[i]);
 
-                        annotationObject.forEach(function(object) {
-                            // make an annotation object out of it
-                            var annotation = {'time':i,'type':'drawing','data':JSON.parse(object)};
-                            lockAddAnnotation = true;
-                            document.querySelector('sevianno-video-controls').addAnnotation(annotation);
-                            lockAddAnnotation = false;
-                        });
+                annotationObject.forEach(function(object) {
+                    // make an annotation object out of it
+                    addAnnotation(i, object);
+                });
 
-                    }
+            }
 
-                    annotations.observe(function(events) {
-                        for (var i in events) {
-                            if (events[i].type === 'add') {
-                                var annotationsList = annotations.val(events[i].name);
-                                var time = events[i].name;
+            annotations.observe(function(events) {
+                for (var i in events) {
+                    if (events[i].type === 'add') {
+                        var annotationsList = annotations.val(events[i].name);
+                        var time = events[i].name;
 
-                                // add the existing objects of the list to the drawing
-                                var objectsJSON = annotationsList.val();
-                                if (!lockAddAnnotation) {
-                                    for (var k in objectsJSON) {
-                                        var annotation = {};
-                                        annotation.time = time;
-                                        annotation.type = 'drawing';
-                                        annotation.data = JSON.parse(objectsJSON[k]);
-                                        lockAddAnnotation = true;
-                                        document.querySelector('sevianno-video-controls').addAnnotation(annotation);
-                                        lockAddAnnotation = false;
-                                    }
-                                }
-
-
-                                // add an observer to the list
-                                annotationsList.observe(function(listEvents) {
-                                    for (var j in listEvents) {
-                                        if (listEvents[j].type === 'insert') {
-                                            if (listEvents[j].changedBy !== y._model.connector.user_id) {
-                                                var object = annotationsList.val(listEvents[j].position);
-                                                var annotation = {};
-                                                annotation.time = time;
-                                                annotation.type = 'drawing';
-                                                annotation.data = JSON.parse(object);
-                                                lockAddAnnotation = true;
-                                                document.querySelector('sevianno-video-controls').addAnnotation(annotation);
-                                                lockAddAnnotation = false;
-                                            }
-                                        }
-                                    }
-                                });
+                        // add the existing objects of the list to the drawing
+                        var objectsJSON = annotationsList.val();
+                        if (!lockAddAnnotation) {
+                            for (var k in objectsJSON) {
+                                addAnnotation(time, objectsJSON[k]);
                             }
                         }
-                    });
 
-                };
+
+                        // add an observer to the list
+                        setAnnotationsListObserver(time, annotationsList);
+                    }
+                }
+            });
+
+        };
+
+        var setAnnotationsListObserver = function(time, annotationsList) {
+            annotationsList.observe(function(listEvents) {
+                for (var j in listEvents) {
+                    if (listEvents[j].type === 'insert') {
+                        if (listEvents[j].changedBy !== y._model.connector.user_id) {
+                            var object = annotationsList.val(listEvents[j].position);
+                            addAnnotation(time, object);
+                        }
+                    }
+                }
+            });
+        };
+
+        document.querySelector('#video1').addEventListener('loadedmetadata', function(e) {
+            connector.whenSynced(function() {
 
                 // observe the main y object
                 y.observe(function(events) {
@@ -136,6 +120,30 @@
                     y.val('annotations', new Y.Object());
                 } else {
                     setAnnotationsObserver(y.val('annotations'));
+                }
+
+                // add existing annotations
+                var annotations = document.querySelector('sevianno-video-controls').getAnnotations();
+                for (var j in annotations) {
+                    var time = annotations[j].time;
+                    var objects = y.val('annotations').val(time);
+
+                    lockAddAnnotation = true;
+                    var annotationObjects = annotations[j].objects;
+                    for (var k in annotationObjects) {
+                        if (k == 0) {
+                            // in the first run we need to check if there are already annotations at that time...
+                            if (objects == null) {
+                                y.val('annotations').val(time, new Y.List([JSON.stringify(annotationObjects[k])]));
+                            } else {
+                                y.val('annotations').val(time).push(JSON.stringify(annotationObjects[k]));
+                            }
+                        } else {
+                            // ...in the subsequent runs we can be sure that there is.
+                            y.val('annotations').val(time).push(JSON.stringify(annotationObjects[k]));
+                        }
+                    }
+                    lockAddAnnotation = false;
                 }
 
             });
