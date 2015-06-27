@@ -1,42 +1,30 @@
 <!--
-Copyright (c) 2014 Advanced Community Information Systems (ACIS) Group,
-Chair of Computer Science 5 (Databases & Information Systems), RWTH Aachen University, Germany
-All rights reserved.
+@license
+Copyright (c) 2015, RWTH Aachen University.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+http://www.apache.org/licenses/LICENSE-2.0
 
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
-* Neither the name of the ACIS Group nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Based on the Polymer Seed Element Copyright (c) 2015 The Polymer Project Authors.
 -->
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../paper-slider/paper-slider.html">
 <link rel="import" href="../iron-icons/av-icons.html">
-<link rel="import" href="../iron-signals/iron-signals.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 
 <!--
-This is a Web component for controlling a SeViAnno video element. It displays a play/pause button together
+This is a Web component for controlling an annotated video element. It displays a play/pause button together
 with a video timeline. Below the timeline, there is an annotation bar that marks all occurrences of annotations
 in the video.
 
@@ -55,29 +43,16 @@ Example:
             @apply(--layout-horizontal --layout-flex);
         }
 
-        /*
-        ::content h2 {
-            color: blue;
-        }
-        */
-
         #timelines {
-            /*height: 50px;
-            width: 200px;
-            display: table;*/
             overflow: hidden;
             @apply(--layout-vertical --layout-flex);
         }
 
         paper-slider {
-            /*display: table-cell;
-            @apply(--layout-flex-auto);*/
-            width:100%;
+            width: 100%;
         }
 
         #markers {
-            /*width: 85%;               fallback for browsers without support for calc()
-            width: calc(100% - 32px);*/
             height: 10px;
             background: #CCC;
             margin: 0px 14px 0px 14px;
@@ -107,7 +82,7 @@ Example:
 
                 <div id = "markers">
                     <template is="dom-repeat" items="{{_annotations}}" as="marker">
-                        <div class="verticalLine" on-tap="markerClicked" title$="{{marker.time}}" style$="{{_getMarkerStyle(marker)}}" data-time$="{{marker.time}}"></div>
+                        <div class="verticalLine" on-tap="_markerClicked" title$="{{marker.time}}" style$="{{_getMarkerStyle(marker)}}" data-time$="{{marker.time}}"></div>
                     </template>
                 </div>
             </div>
@@ -128,7 +103,7 @@ Example:
              *
              * @attribute _annotations
              * @type array
-             * @default []
+             * @default [{time: Number, type: String, objects: Array}]
              */
             _annotations: [],
 
@@ -145,6 +120,11 @@ Example:
                 value: 4000
             },
 
+            /**
+             * A property saying whether the video is playing currently. Please note that this attribute may be true
+             * even when the video is paused, since it remains true for transmission times.
+             *
+             */
             isPlaying: {
                 type: Boolean,
                 value: false
@@ -153,8 +133,8 @@ Example:
             /**
              * The id of the video element that should be controlled.
              *
-             * @attribute target
-             * @type string
+             * @attribute targetVideo
+             * @type String
              * @default null
              */
             targetVideo: {
@@ -162,11 +142,22 @@ Example:
                 value: null
             },
 
+            /**
+             * The id of the drawing-overlay element that should be used.
+             *
+             * @attribute targetDrawing
+             * @type String
+             * @default null
+             */
             targetDrawing: {
                 type: String,
                 value: null
             },
 
+            /**
+             * The duration of the video. This is set once its metadata has been loaded.
+             *
+             */
             duration: {
                 type: Number,
                 readOnly: true,
@@ -199,18 +190,18 @@ Example:
             // loading resources, etc).
 
             this._targetVideoElement = document.getElementById(this.targetVideo);
-            // call loadedmetadata in case the metadata is already loaded
-            this.loadedmetadata();
-            this._targetVideoElement.onloadedmetadata = this.loadedmetadata.bind(this);
-            this._targetVideoElement.ontimeupdate = this.timeupdate.bind(this);
-            this._targetVideoElement.addEventListener("ended", this.videoEnded.bind(this));
+            // call _loadedmetadata in case the metadata is already loaded
+            this._loadedmetadata();
+            this._targetVideoElement.addEventListener('loadedmetadata', this._loadedmetadata.bind(this));
+            this._targetVideoElement.addEventListener('timeupdate', this._timeupdate.bind(this));
+            this._targetVideoElement.addEventListener('ended', this._videoEnded.bind(this));
 
             // now listen to object-added events of the drawing canvas
             this._targetDrawingElement = document.getElementById(this.targetDrawing);
-            this._targetDrawingElement.addEventListener("drawing-overlay-object-added", this.drawingObjectAdded.bind(this));
+            this._targetDrawingElement.addEventListener('drawing-overlay-object-added', this._drawingObjectAdded.bind(this));
 
             // listen to mouse:down and stop playing the video
-            this._targetDrawingElement.addEventListener("drawing-overlay-mouse-down", this._drawingMouseDown.bind(this));
+            this._targetDrawingElement.addEventListener('drawing-overlay-mouse-down', this._drawingMouseDown.bind(this));
         },
 
         detached: function() {
@@ -218,6 +209,13 @@ Example:
             // removed from a document.
             //
             // Use this to clean up anything you did in `attached`.
+
+            this._targetVideoElement.removeEventListener('loadedmetadata', this._loadedmetadata.bind(this));
+            this._targetVideoElement.removeEventListener('timeupdate', this._timeupdate.bind(this));
+            this._targetVideoElement.removeEventListener('ended', this._videoEnded.bind(this));
+
+            this._targetDrawingElement.removeEventListener('drawing-overlay-object-added', this._drawingObjectAdded.bind(this));
+            this._targetDrawingElement.addEventListener('drawing-overlay-mouse-down', this._drawingMouseDown.bind(this));
         },
 
         // Element Behavior
@@ -241,6 +239,7 @@ Example:
 
         /**
          * The event listener for the play/pause button.
+         *
          */
         _playAction: function() {
             if (!this.isPlaying) {
@@ -250,9 +249,13 @@ Example:
             }
         },
 
+        /**
+         * This method starts playing the video.
+         *
+         */
         play: function () {
             // clear transmission timeout if there is any
-            clearTimeout(this.transmissionTimeout);
+            clearTimeout(this._transmissionTimeout);
 
             this.isPlaying = true;
             this.$.playButton.icon = "av:pause";
@@ -260,6 +263,10 @@ Example:
             this._targetDrawingElement.clear();
         },
 
+        /**
+         * This method pauses the video.
+         *
+         */
         pause: function () {
             this.isPlaying = false;
             this.$.playButton.icon = "av:play-arrow";
@@ -280,7 +287,7 @@ Example:
             this._targetDrawingElement.clear();
 
             // reset last transmission time, otherwise it will not pause the next time we run over it
-            this.lastTransmissionTime = null;
+            this._lastTransmissionTime = null;
 
             // make sure we start playing in case we are in a transmission
             if (this.isPlaying) {
@@ -288,19 +295,25 @@ Example:
             }
         },
 
-        lockAddAnnotation: false,
+        /**
+         * This is a flag that when set to true is indicating whether the canvas is currently accepting drawings
+         * set programmatically.
+         *
+         */
+        _lockAddAnnotation: false,
 
         /**
-         * The `markerClicked` method is called when a marker is clicked. It will jump the video and the marker time and
-         * show the annotation for this marker.
+         * The `_markerClicked` method is called when a marker is clicked. It will jump the video and the marker time
+         * and show the annotation for this marker.
+         *
          * @param event
-         * @param detail
+         * @param detail an annotation object.
          * @param sender the value is binded at the immediateValue data of the element.
          */
-        markerClicked: function (event, detail, sender) {
+        _markerClicked: function (event, detail, sender) {
             // clear transmission timeout if there is any
-            clearTimeout(this.transmissionTimeout);
-            this.lastTransmissionTime = null;
+            clearTimeout(this._transmissionTimeout);
+            this._lastTransmissionTime = null;
 
             var time = parseFloat(event.target.dataset.time);
 
@@ -316,9 +329,9 @@ Example:
 
                         // load the annotation
                         var drawing = {"objects":annotation.objects, "background":""};
-                        this.lockAddAnnotation = true;
+                        this._lockAddAnnotation = true;
                         this._targetDrawingElement.loadJSON(drawing);
-                        this.lockAddAnnotation = false;
+                        this._lockAddAnnotation = false;
 
                         break;
                     }
@@ -326,15 +339,21 @@ Example:
             }
         },
 
-        videoEnded: function(e) {
+        /**
+         * This event listener is called when the video has ended.
+         */
+        _videoEnded: function(e) {
             // clear transmission timeout if there is any
-            clearTimeout(this.transmissionTimeout);
-            this.lastTransmissionTime = null;
+            clearTimeout(this._transmissionTimeout);
+            this._lastTransmissionTime = null;
 
             this.pause();
         },
 
-        loadedmetadata: function(e) {
+        /**
+         * This event listener is called when the video has loaded its metadata, e.g. the duration of the video.
+         */
+        _loadedmetadata: function(e) {
             if (!this._targetVideoElement.duration) {
                 return;
             }
@@ -344,19 +363,25 @@ Example:
         },
 
         /**
-         * This is a flag that tells us the last time the video was paused for a transmission.
+         * This is a flag that tells us the last time the video was paused for a transmission. It is important because
+         * otherwise the video gets paused again when starting to play after a transmission.
          */
-        lastTransmissionTime: null,
-
-        transmissionTimeout: null,
+        _lastTransmissionTime: null,
 
         /**
-         * For every timeupdate event updates the value of the slider.
+         * The timeout that is active during a transmission.
+         */
+        _transmissionTimeout: null,
+
+        /**
+         * An event listener for timeupdate events from the video. This makes sure that the timeline slider is updated
+         * and the transmission is started when being on an annotation.
+         *
          * @param e
          * @param detail
          * @param sender
          */
-        timeupdate: function(e) {
+        _timeupdate: function(e) {
             var currentTime = this._targetVideoElement.currentTime;
             this.$.slider.value = currentTime;
 
@@ -364,21 +389,21 @@ Example:
 
             // first check if we are playing currently. If not, then check if there is an annotation at this time,
             // therefore first see if we just continued playing after a transmission.
-            if (this.isPlaying && (this.lastTransmissionTime !== roundedTime)) {
+            if (this.isPlaying && (this._lastTransmissionTime !== roundedTime)) {
                 for (var i in this._annotations) {
                     if (this._annotations[i].time === roundedTime) {
-                        this.lastTransmissionTime = roundedTime;
+                        this._lastTransmissionTime = roundedTime;
                         // stop playing the video, but do not pause it
                         this._targetVideoElement.pause();
 
                         // load the annotation
                         var drawing = {"objects":this._annotations[i].objects, "background":""};
-                        this.lockAddAnnotation = true;
+                        this._lockAddAnnotation = true;
                         this._targetDrawingElement.loadJSON(drawing);
-                        this.lockAddAnnotation = false;
+                        this._lockAddAnnotation = false;
 
                         // timeout for transmission time
-                        this.transmissionTimeout = setTimeout(this.play.bind(this), this.transmission);
+                        this._transmissionTimeout = setTimeout(this.play.bind(this), this.transmission);
 
                         //TODO: show animation for transmission
                     }
@@ -387,10 +412,11 @@ Example:
         },
 
         /**
-         * The listener to object-added events of the drawing canvas.
+         * The listener to object-added events of the drawing canvas. It makes sure this event is further propagated
+         * to listeners of the sevianno-video-controls element.
          */
-        drawingObjectAdded: function(e) {
-            if (!this.lockAddAnnotation) {
+        _drawingObjectAdded: function(e) {
+            if (!this._lockAddAnnotation) {
                 var objectJSON = e.detail.object.toJSON();
                 // we round to the nearest 0.5
                 var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
@@ -439,18 +465,19 @@ Example:
 
         /**
          * This is the event listener for the mouse:down event by the canvas. This is usually received
-         * when starting a new drawing. That's why we clear the transmission timeout and pause the video.
+         * when starting a new drawing. Since we don't want the video to start playing while drawing,
+         * we clear the transmission timeout and pause the video.
          */
         _drawingMouseDown: function(e) {
             this.pause();
 
             // clear transmission timeout if there is any
-            clearTimeout(this.transmissionTimeout);
-            this.lastTransmissionTime = null;
+            clearTimeout(this._transmissionTimeout);
+            this._lastTransmissionTime = null;
 
             // make sure that after playing the video does not immediately stop again
             var currentTime = Math.round(this._targetVideoElement.currentTime * 2) / 2;
-            this.lastTransmissionTime = currentTime;
+            this._lastTransmissionTime = currentTime;
         },
 
         /**
@@ -496,13 +523,22 @@ Example:
                 // since we only store a list of objects, we need to make a complete drawing out of it before
                 // adding it to the canvas
                 var drawing = {"objects":annotationDrawing.objects, "background":""};
-                this.lockAddAnnotation = true;
+                this._lockAddAnnotation = true;
                 this._targetDrawingElement.loadJSON(drawing);
-                this.lockAddAnnotation = false;
+                this._lockAddAnnotation = false;
             }
 
             // notify listeners
             this.fire("sevianno-annotation-added", annotation);
+        },
+
+        /**
+         * Returns all annotations.
+         *
+         * @returns {{time: Number, type: String, objects: Array}[]}
+         */
+        getAnnotations: function() {
+            return this._annotations;
         }
 
     });

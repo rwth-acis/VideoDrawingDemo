@@ -2,10 +2,10 @@
   "name": "sevianno-video-controls",
   "version": "1.0.0",
   "authors": [
-    "Bujar Bakiu",
-    "Istv�n Koren"
+    "István Koren",
+    "Bujar Bakiu"
   ],
-  "description": "This is a Web component for controlling a video element.",
+  "description": "This is a Web component for controlling an annotated video element.",
   "keywords": [
     "web-component",
     "web-components",
@@ -24,7 +24,6 @@
     "polymer": "Polymer/polymer#^1.0.0",
     "paper-icon-button": "PolymerElements/paper-icon-button#^1.0.0",
     "paper-slider": "PolymerElements/paper-slider#^1.0.0",
-    "iron-signals": "PolymerElements/iron-signals#^1.0.0",
     "iron-flex-layout": "PolymerElements/iron-flex-layout#^1.0.0"
   },
   "devDependencies": {
