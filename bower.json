@@ -2,17 +2,16 @@
   "name": "VideoDrawingDemo",
   "private": true,
   "dependencies": {
-    "iron-elements": "PolymerElements/iron-elements#~1.0.0",
-    "paper-elements": "PolymerElements/paper-elements#~1.0.1",
-    "platinum-elements": "PolymerElements/platinum-elements#~1.0.1",
-    "neon-elements": "PolymerElements/neon-elements#~1.0.0",
-    "page": "visionmedia/page.js#~1.6.3",
-    "drawing-overlay": "~1.0.0",
-    "sevianno-video-controls": "~1.0.2",
-    "yjs": "yjs#~0.5.2",
-    "y-xmpp": "~0.5.0",
-    "y-list": "~0.5.1",
-    "y-webrtc": "y-webrtc#~0.5.0"
+    "iron-elements": "PolymerElements/iron-elements#^1.0.0",
+    "paper-elements": "PolymerElements/paper-elements#^1.0.1",
+    "platinum-elements": "PolymerElements/platinum-elements#^1.0.1",
+    "neon-elements": "PolymerElements/neon-elements#^1.0.0",
+    "page": "visionmedia/page.js#^1.6.3",
+    "drawing-overlay": "develop",
+    "sevianno-video-controls": "develop",
+    "y-websockets-client": "^8.0.9",
+    "y-memory": "^8.0.5",
+    "y-array": "^9.0.3"
   },
   "devDependencies": {
     "web-component-tester": "*",
