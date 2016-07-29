@@ -31,8 +31,8 @@
 
         // set up y-js framework
         //var connector = new Y.WebRTC("video-drawing-demo");
-        var connector = new Y.XMPP().join('video-drawing-demo');
-        window.y = new Y(connector);
+        //var connector = new Y.XMPP().join('video-drawing-demo');
+        //window.y = new Y(connector);
 
         // this token makes sure that annotations that were just added to the drawing from a yjs object
         // are not immediately written back to yjs.
@@ -102,6 +102,7 @@
         };
 
         document.querySelector('#video1').addEventListener('loadedmetadata', function(e) {
+            /*
             connector.whenSynced(function() {
 
                 // observe the main y object
@@ -147,6 +148,7 @@
                 }
 
             });
+            */
         });
 
         document.querySelector('sevianno-video-controls').addEventListener('sevianno-annotation-added', function(annotation) {
@@ -170,6 +172,140 @@
             }
 
         });
+
+
+        /*
+         * NEW CODE
+         */
+
+        var self = this;
+
+        Y({
+            db: {
+                name: 'memory'
+            },
+            connector: {
+                name: 'websockets-client',
+                room: 'video-drawing',// + Math.random(),
+                url: 'localhost:1234'
+            },
+            sourceDir: '/bower_components',
+            share: {
+                annotations: 'Map'
+            }
+        }).then(function (y) {
+            console.log('Yjs connected.');
+            self._y = y;
+
+            // check if we are on a new space or if there is already content from another instance
+            if (self._y.share.annotations.keys().length === 0) {
+                // we are in a new Yjs room
+            } else {
+                // late join
+                console.log('late joining');
+
+                // get all the existing annotations
+                for (var key in self._y.share.annotations.map) {
+                    console.log('yet another key: ' + key);
+                    self._y.share.annotations.get(key).then(function(annotationMap) {
+                        // one annotation map per point in time. It contains UUIDs as keys and pathArrays as objects
+
+                        // iterate through the paths
+                        for (var pathKey in annotationMap.map) {
+                            console.log('path with UUID ' + pathKey);
+                            annotationMap.get(pathKey).then(function(pathArray) {
+                                for (var i=0; i < pathArray.length; i++) {
+                                    pathArray.get(i).then(function(vectorArray) {
+                                        console.log(JSON.stringify(vectorArray.toArray()));
+                                    });
+                                }
+
+                            });
+                        }
+                    });
+                }
+            }
+
+            // observe when annotations are added at a new point in time
+            y.share.annotations.observe(function(event) {
+                if (event.type === 'add') {
+                    event.object.get(event.name).then(function(pathMaps) {
+                        // annotation at a new time
+                    });
+                }
+            });
+
+            document.querySelector('sevianno-video-controls').addEventListener('sevianno-annotation-path-created', function(event) {
+                var annotation = event.detail;
+                var annotationKey = 'time' + annotation.time;
+
+                // check if there is already an annotation in the shared map for this time
+                if (y.share.annotations.keys().indexOf(annotationKey) > -1) {
+                    // yes, there is an annotation at this time already
+
+                    y.share.annotations.get(annotationKey).then(function(annotationsMap) {
+                        // this is the existing map at the current time
+
+                        annotationsMap.set(annotation.data.id, Y.Array).then(function(pathArray) {
+                            // observe the newly created annotation
+                            pathArray.observe(observePath);
+
+                            pathArray.insert(pathArray.length, [Y.Array]);
+                            pathArray.get(pathArray.length - 1).then(function(vectorArray) {
+                                vectorArray.push(annotation.data.pathArray);
+                            });
+                        });
+                    });
+
+                } else {
+                    // add a new Y-Map at the current point in time
+                    y.share.annotations.set(annotationKey, Y.Map).then(function(map) {
+                        // at this point the new array property is created
+                        map.observe(observeAnnotations);
+
+                        // add new path at the current time
+                        map.set(annotation.data.id, Y.Array).then(function(pathArray) {
+
+                            pathArray.observe(observePath);
+
+                            pathArray.insert(pathArray.length, [Y.Array]);
+                            pathArray.get(pathArray.length - 1).then(function(vectorArray) {
+                                vectorArray.push(annotation.data.pathArray);
+                            });
+                        });
+                    });
+                }
+
+            });
+
+            document.querySelector('sevianno-video-controls').addEventListener('sevianno-annotation-path-appended', function(event) {
+                var annotation = event.detail;
+                var annotationKey = 'time' + annotation.time;
+
+                // get the annotation at this point in time
+                y.share.annotations.get(annotationKey).then(function(annotationsMap) {
+
+                    // get the path with the correct ID
+                    annotationsMap.get(annotation.data.id).then(function(pathArray) {
+                        pathArray.insert(pathArray.length, [Y.Array]);
+                        pathArray.get(pathArray.length - 1).then(function(vectorArray) {
+                            vectorArray.push(annotation.data.pathArray);
+                        });
+                    });
+                });
+            });
+
+            var observeAnnotations = function(event) {
+                // event.name is the ID of the path
+                console.log('observeAnnotations');
+            };
+
+            var observePath = function(event) {
+                console.log('observing path');
+            };
+
+        });
+
 
     });
 

@@ -11,7 +11,8 @@
     "sevianno-video-controls": "develop",
     "y-websockets-client": "^8.0.9",
     "y-memory": "^8.0.5",
-    "y-array": "^9.0.3"
+    "y-array": "^9.0.3",
+    "y-map": "^9.0.4"
   },
   "devDependencies": {
     "web-component-tester": "*",
